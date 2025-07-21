@@ -1,6 +1,5 @@
 import streamlit as st
 import math
-import time
 import random
 
 st.set_page_config(page_title="Data Structure Visualizer", layout="wide")
@@ -18,19 +17,26 @@ with tabs[0]:
     st.header("Array Traversal")
     arr_input = st.text_input("Enter array elements (comma separated):", "1,2,3,4,5")
     arr = [x.strip() for x in arr_input.split(",") if x.strip()]
-    speed = st.slider("Animation speed (seconds per step)", 0.1, 2.0, 0.7, 0.1)
-    if st.button("Start Traversal", key="array_start") and arr:
-        for i, val in enumerate(arr):
-            st.write(f"**Traversing array:** Highlighting element at index {i} (value: {val})")
-            cols = st.columns(len(arr))
-            for j, v in enumerate(arr):
-                color = "#ffd700" if j == i else VIBRANT_COLORS[j % len(VIBRANT_COLORS)]
-                with cols[j]:
-                    st.markdown(f"""
-                        <div style='background:{color};border-radius:15px;padding:20px 0;margin:5px;text-align:center;font-size:2em;font-weight:bold;color:#222;'>{v}</div>
-                    """, unsafe_allow_html=True)
-            time.sleep(speed)
-            st.experimental_rerun()
+    if 'array_step' not in st.session_state or st.session_state.get('array_input_last') != arr_input:
+        st.session_state.array_step = 0
+        st.session_state.array_input_last = arr_input
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Next Step", key="array_next") and arr:
+            st.session_state.array_step = (st.session_state.array_step + 1) % len(arr)
+    with col2:
+        if st.button("Reset", key="array_reset"):
+            st.session_state.array_step = 0
+    if arr:
+        i = st.session_state.array_step
+        st.write(f"**Traversing array:** Highlighting element at index {i} (value: {arr[i]})")
+        cols = st.columns(len(arr))
+        for j, v in enumerate(arr):
+            color = "#ffd700" if j == i else VIBRANT_COLORS[j % len(VIBRANT_COLORS)]
+            with cols[j]:
+                st.markdown(f"""
+                    <div style='background:{color};border-radius:15px;padding:20px 0;margin:5px;text-align:center;font-size:2em;font-weight:bold;color:#222;'>{v}</div>
+                """, unsafe_allow_html=True)
 
 # --- Tree Visualization ---
 def draw_tree(nodes, highlight_index=None):
@@ -78,22 +84,29 @@ with tabs[1]:
     st.header("Binary Tree (Level Order)")
     tree_input = st.text_input("Enter tree nodes (comma separated):", "A,B,C,D,E,F,G")
     tree_nodes = [x.strip() for x in tree_input.split(",") if x.strip()]
-    speed = st.slider("Animation speed (seconds per step)", 0.1, 2.0, 0.9, 0.1, key="tree_speed")
-    if st.button("Start Tree Visualization") and tree_nodes:
-        for i, val in enumerate(tree_nodes):
-            parent = (i - 1) // 2 if i != 0 else None
-            if i == 0:
-                reasoning = f"Placing root node with value {tree_nodes[0]}."
+    if 'tree_step' not in st.session_state or st.session_state.get('tree_input_last') != tree_input:
+        st.session_state.tree_step = 0
+        st.session_state.tree_input_last = tree_input
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Next Step", key="tree_next") and tree_nodes:
+            st.session_state.tree_step = (st.session_state.tree_step + 1) % len(tree_nodes)
+    with col2:
+        if st.button("Reset", key="tree_reset"):
+            st.session_state.tree_step = 0
+    if tree_nodes:
+        i = st.session_state.tree_step
+        parent = (i - 1) // 2 if i != 0 else None
+        if i == 0:
+            reasoning = f"Placing root node with value {tree_nodes[0]}."
+        else:
+            if parent is not None and parent >= 0:
+                side = "left" if i == 2 * parent + 1 else "right"
+                reasoning = f"Placing node with value {tree_nodes[i]} as {side} child of node {tree_nodes[parent]}."
             else:
-                if parent is not None and parent >= 0:
-                    side = "left" if i == 2 * parent + 1 else "right"
-                    reasoning = f"Placing node with value {tree_nodes[i]} as {side} child of node {tree_nodes[parent]}."
-                else:
-                    reasoning = f"Placing node with value {tree_nodes[i]}."
-            st.write(reasoning)
-            draw_tree(tree_nodes, highlight_index=i)
-            time.sleep(speed)
-            st.experimental_rerun()
+                reasoning = f"Placing node with value {tree_nodes[i]}."
+        st.write(reasoning)
+        draw_tree(tree_nodes, highlight_index=i)
 
 # --- BST Visualization ---
 class BSTNode:
@@ -195,25 +208,33 @@ with tabs[2]:
         bst_values = [int(x.strip()) for x in bst_input.split(",") if x.strip()]
     except:
         st.warning("Please enter only integer values for BST.")
-    speed = st.slider("Animation speed (seconds per step)", 0.1, 2.0, 1.1, 0.1, key="bst_speed")
-    if st.button("Start BST Visualization") and bst_values:
-        for i, val in enumerate(bst_values):
-            root, highlight_node, path = build_bst(bst_values, i)
-            if i == 0:
-                reasoning = f"Inserting {val}: Tree is empty, insert as root."
-            else:
-                path_str = []
-                for j in range(len(path)-1):
-                    if val < path[j].value:
-                        path_str.append(f"{val} < {path[j].value}, go left.")
-                    else:
-                        path_str.append(f"{val} >= {path[j].value}, go right.")
-                path_str.append("Insert here.")
-                reasoning = f"Inserting {val}: " + ' '.join(path_str)
-            st.write(reasoning)
-            draw_bst(root, highlight_node, path)
-            time.sleep(speed)
-            st.experimental_rerun()
+    if 'bst_step' not in st.session_state or st.session_state.get('bst_input_last') != bst_input:
+        st.session_state.bst_step = 0
+        st.session_state.bst_input_last = bst_input
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Next Step", key="bst_next") and bst_values:
+            st.session_state.bst_step = (st.session_state.bst_step + 1) % len(bst_values)
+    with col2:
+        if st.button("Reset", key="bst_reset"):
+            st.session_state.bst_step = 0
+    if bst_values:
+        i = st.session_state.bst_step
+        root, highlight_node, path = build_bst(bst_values, i)
+        val = bst_values[i]
+        if i == 0:
+            reasoning = f"Inserting {val}: Tree is empty, insert as root."
+        else:
+            path_str = []
+            for j in range(len(path)-1):
+                if val < path[j].value:
+                    path_str.append(f"{val} < {path[j].value}, go left.")
+                else:
+                    path_str.append(f"{val} >= {path[j].value}, go right.")
+            path_str.append("Insert here.")
+            reasoning = f"Inserting {val}: " + ' '.join(path_str)
+        st.write(reasoning)
+        draw_bst(root, highlight_node, path)
 
 # --- DFS Visualization ---
 def draw_graph(nodes, edges, visited, stack, highlight, highlight_edge):
@@ -250,48 +271,58 @@ with tabs[3]:
     dfs_edges_input = st.text_input("Edges (A-B,B-C,...):", "A-B,B-C,C-D,D-E,A-E")
     nodes = [x.strip() for x in dfs_nodes_input.split(",") if x.strip()]
     edges = [x.strip() for x in dfs_edges_input.split(",") if x.strip()]
-    speed = st.slider("Animation speed (seconds per step)", 0.1, 2.0, 1.0, 0.1, key="dfs_speed")
-    if st.button("Start DFS Visualization") and nodes and edges:
-        # Prepare DFS steps
-        adj = {n: [] for n in nodes}
-        for edge in edges:
-            if '-' in edge:
-                a, b = edge.split('-')
-                a, b = a.strip(), b.strip()
-                if a in adj and b in adj:
-                    adj[a].append(b)
-                    adj[b].append(a)
-        steps = []
-        stack_history = []
-        def dfs(node, parent, visited, stack):
-            steps.append(("visit", node, set(visited), list(stack), parent))
-            visited.add(node)
-            stack.append(node)
-            stack_history.append(list(stack))
-            for neighbor in sorted(adj[node]):
-                if neighbor not in visited:
-                    steps.append(("recurse", node, set(visited), list(stack), neighbor))
-                    dfs(neighbor, node, visited, stack)
-            steps.append(("backtrack", node, set(visited), list(stack), parent))
-            stack.pop()
-            stack_history.append(list(stack))
-        dfs(nodes[0], None, set(), [])
-        for step in steps:
-            action, node, visited, stack, arg = step
-            highlight = node
-            highlight_edge = None
-            if action == "recurse":
-                highlight_edge = (node, arg)
-            if action == "visit":
-                reasoning = f"DFS visiting node {node}. Stack: {stack}"
-            elif action == "recurse":
-                reasoning = f"DFS at node {node}, recursing to {arg}. Stack: {stack}"
-            elif action == "backtrack":
-                reasoning = f"DFS backtracking from node {node}. Stack after pop: {stack}"
-            else:
-                reasoning = ""
-            st.write(reasoning)
-            draw_graph(nodes, edges, visited, stack, highlight, highlight_edge)
-            st.markdown(f"**Stack:** {' → '.join(stack)}")
-            time.sleep(speed)
-            st.experimental_rerun() 
+    if 'dfs_step' not in st.session_state or st.session_state.get('dfs_input_last') != (dfs_nodes_input, dfs_edges_input):
+        st.session_state.dfs_step = 0
+        st.session_state.dfs_input_last = (dfs_nodes_input, dfs_edges_input)
+        st.session_state.dfs_steps = []
+        if nodes and edges:
+            adj = {n: [] for n in nodes}
+            for edge in edges:
+                if '-' in edge:
+                    a, b = edge.split('-')
+                    a, b = a.strip(), b.strip()
+                    if a in adj and b in adj:
+                        adj[a].append(b)
+                        adj[b].append(a)
+            steps = []
+            stack_history = []
+            def dfs(node, parent, visited, stack):
+                steps.append(("visit", node, set(visited), list(stack), parent))
+                visited.add(node)
+                stack.append(node)
+                stack_history.append(list(stack))
+                for neighbor in sorted(adj[node]):
+                    if neighbor not in visited:
+                        steps.append(("recurse", node, set(visited), list(stack), neighbor))
+                        dfs(neighbor, node, visited, stack)
+                steps.append(("backtrack", node, set(visited), list(stack), parent))
+                stack.pop()
+                stack_history.append(list(stack))
+            dfs(nodes[0], None, set(), [])
+            st.session_state.dfs_steps = steps
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Next Step", key="dfs_next") and nodes and edges:
+            st.session_state.dfs_step = (st.session_state.dfs_step + 1) % len(st.session_state.dfs_steps)
+    with col2:
+        if st.button("Reset", key="dfs_reset"):
+            st.session_state.dfs_step = 0
+    if nodes and edges and st.session_state.get('dfs_steps'):
+        steps = st.session_state.dfs_steps
+        i = st.session_state.dfs_step
+        action, node, visited, stack, arg = steps[i]
+        highlight = node
+        highlight_edge = None
+        if action == "recurse":
+            highlight_edge = (node, arg)
+        if action == "visit":
+            reasoning = f"DFS visiting node {node}. Stack: {stack}"
+        elif action == "recurse":
+            reasoning = f"DFS at node {node}, recursing to {arg}. Stack: {stack}"
+        elif action == "backtrack":
+            reasoning = f"DFS backtracking from node {node}. Stack after pop: {stack}"
+        else:
+            reasoning = ""
+        st.write(reasoning)
+        draw_graph(nodes, edges, visited, stack, highlight, highlight_edge)
+        st.markdown(f"**Stack:** {' → '.join(stack)}") 
